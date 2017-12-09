@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="../statics/css/mui.min.css">
+    <script src="../statics/js/mui.min.js"></script>
+    <script src="../statics/js/vue.js"></script>
+    <script src="../statics/js/vue-resource121.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <div class="mui-slider">
+            <div class="mui-slider-group">
+                <div class="mui-slider-item" v-for="(item,index) in lunbo" :key="index">
+                    <a :href="item.url">
+                        <img :src="item.img">
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    // var gallery = mui('.mui-slider');
+    // gallery.slider({
+    //     interval:5000//自动轮播周期，若为0则不自动播放，默认为0；
+    // });
+    let vm = new Vue({
+        el: '#app',
+        data: {
+            lunbo: []
+        },
+        created: function () {
+            let url = 'http://vue.studyit.io/api/getlunbo';
+            this.$http.get(url).then(function (res) {
+                if (res.body.status == 0) {
+                    console.log(1)
+                    this.lunbo = res.body.message;
+                    // var gallery = mui('.mui-slider');
+                    // gallery.slider({
+                    //     interval: 0//自动轮播周期，若为0则不自动播放，默认为0；
+                    // });
+                }
+
+            })
+        }
+    })
+</script>
+
+</html>
