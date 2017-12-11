@@ -1,42 +1,79 @@
 <template>
-    <div class="mui-content">
-        <ul class="proList">
-            <li v-for="(item,index) in proInfo" :key="index">
-                <div class="top">
-                    <router-link v-bind="{'to':'/buy/'+item.id}"><img :src="item.img_url" /></router-link>
-                </div>
-                <div class="bottom">
-                    <div class="title">{{item.title}}</div>
-                    <div class="b">
-                        <p><span class="price">￥{{item.sell_price}}</span>
-                        <span class="oldprice">￥{{item.market_price}}</span></p>
-                        <p class="hot"><span class="mui-pull-left">热卖中</span>
-                        <span class="mui-pull-right">剩<i>{{item.stock_quantity}}</i>件</span></p>
+    <div class="mui-content" ref="muicontent">
+        <mt-loadmore :autoFill="false" :bottom-method="loadBottom" 
+        :bottom-all-loaded="allLoaded" ref="loadmore"
+         @bottom-status-change="statusChange">
+            <ul class="proList">
+                <li v-for="(item,index) in proInfo" :key="index">
+                    <div class="top">
+                        <router-link v-bind="{'to':'/buy/'+item.id}"><img :src="item.img_url" /></router-link>
                     </div>
-                </div>
-            </li>
-        </ul>
+                    <div class="bottom">
+                        <div class="title">{{item.title}}</div>
+                        <div class="b">
+                            <p><span class="price">￥{{item.sell_price}}</span>
+                            <span class="oldprice">￥{{item.market_price}}</span></p>
+                            <p class="hot"><span class="mui-pull-left">热卖中</span>
+                            <span class="mui-pull-right">剩<i>{{item.stock_quantity}}</i>件</span></p>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </mt-loadmore>
     </div>
 </template>
 <script>
 export default {
   data(){
       return {
-          proInfo:[]
+          proInfo:[],
+          allLoaded:false,
+          page:1
       }
   },
   methods:{
+      //获取商品列表数据
       getProInfo(page){
-        var url = "http://vue.studyit.io/api/getgoods?pageindex="+page;
-        this.$http.get(url).then(function(res){
-            if(res.body.status == 0){
-                this.proInfo = res.body.message;
+        var url = "/api/getgoods?pageindex="+page;
+        this.axios.get(url).then((res)=>{
+            if(res.status == 200 && res.data.status == 0){
+                //成功获取到商品列表数据之后
+                if(res.data.message.length == 0){
+                    //数据已全部获取完毕，再上拉时不会执行loadBottom
+                    this.allLoaded = true;
+                    this.$toast('没有更多了！');
+                }
+                this.proInfo = this.proInfo.concat(res.data.message);
+                //在加载数据之后对组件进行重新定位
+                this.$refs.loadmore.onBottomLoaded();
             }
         })
+        .catch((err)=>{
+            console.error(err);
+        })
+      },
+      //上拉时触发的事件的处理函数
+      loadBottom(){
+          //上拉时加载更多数据
+          this.page++;
+          this.getProInfo(this.page);  
+      },
+      //当用户滑动组件时会有三个状态，pull：按下组件，但滑动距离没有达到默认的topDistance（70）
+      //，此时松手不会触发method，列表会回到初始位置，
+      //drop：按下距离不小于topDistance，此时释放会触发method
+      //loading：组件已经释放，method正在执行
+      statusChange(status){
+        //   console.log(status)
       }
   },
-  created:function(){
+  created(){
       this.getProInfo(1);
+      //此时组件的对象创建完毕，但是组件中的元素还未创建，此时不能操作组件中的元素
+  },
+  //当组件被添加到父元素中时，才能获取组件中的元素进行操作
+  mounted(){
+      let height = document.documentElement.clientHeight;
+      this.$refs.muicontent.style.height = height + 'px';
   }
 }
 </script>
@@ -101,6 +138,10 @@ export default {
         line-height:1;
         background-color:#fff;
         padding:0 5px 5px;
+    }
+    .mint-loadmore {
+        padding-top:44px;
+        padding-bottom:50px;
     }
 </style>
 

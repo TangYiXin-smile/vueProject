@@ -1,3 +1,9 @@
 .newsContent img{
     width:100%;
 }
+.gomeImgLoad{
+    vertical-align:top;
+}
+[align='center']{
+    margin-bottom:0;
+}

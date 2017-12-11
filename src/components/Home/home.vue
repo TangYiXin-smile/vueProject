@@ -67,7 +67,7 @@
     export default{
         data(){
             return{
-                getUrl:'http://vue.studyit.io/api/getlunbo'
+                getUrl:'/api/getlunbo'
             }
         },
         created(){

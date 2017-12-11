@@ -2,7 +2,7 @@
     <mt-swipe :auto="4000">
             <mt-swipe-item  v-for="(item,index) in lunbo" :key="index">
                 <a :href="item.url">
-                    <img :src="item.img">
+                    <img :src="item.img" alt="轮播图" />
                 </a>
             </mt-swipe-item>
     </mt-swipe>
@@ -21,10 +21,15 @@
         methods:{
             getLunbo(){
                 let url = this.sendUrl;
-                this.$http.get(url).then(function(res){
-                    if(res.body.status == 0){
-                        this.lunbo = res.body.message;
+                this.axios.get(url).then((res)=>{
+                    if(res.status === 200 && res.data.status == 0){
+                        this.lunbo = res.data.message;
+                    }else{
+                        console.log('服务器内部错误');
                     }
+                })
+                .catch((err)=>{
+                    console.error(err);
                 })
             }
         }

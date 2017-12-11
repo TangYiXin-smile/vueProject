@@ -10,6 +10,20 @@ module.exports = {
     module: {
         rules: [
             {
+                test: /vue-preview.src.*?js$/,
+                loader: 'babel'
+            },
+            {
+                test: /\.js$/,
+                exclude: /(node_modules|bower_components)/,
+                use: {
+                loader: 'babel-loader',
+                options: {
+                    presets: ['@babel/preset-env']
+                }
+                }
+            },
+            {
                 test: /\.css$/,
                 use: [
                     'style-loader',

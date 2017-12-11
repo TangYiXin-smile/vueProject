@@ -11,7 +11,7 @@
             <div class="mui-content-padded my-imgContent">
                 <ul class="showImg">
                     <li v-for="(item,index) in imgArr" :key="index">
-                        <img :src="item.src" data-preview-src="" data-preview-group="1" />
+                        <img class="preview-img" @click="$preview.open(index, imgArr)" :src="item.src" />
                     </li>
                 </ul>
             </div>
@@ -22,7 +22,10 @@
     </div>
 </template>
 <script>
+import Vue from 'vue';
 import comments from '../Common/comments.vue';
+import VuePreview from 'vue-preview';
+Vue.use(VuePreview);
 export default {
   props: ["id"],
   data() {
@@ -52,6 +55,10 @@ export default {
       this.axios.get(url2).then((res)=>{
         if (res.status == 200 && res.data.status == 0) {
           this.imgArr = res.data.message;
+          this.imgArr.forEach(function(item){
+            item.w = 600;
+            item.h = 400;
+          })
         } else {
           console.log("获取数据失败");
         }
