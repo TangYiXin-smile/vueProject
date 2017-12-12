@@ -9,10 +9,16 @@
     export default{
         data(){
             return {
-                count:1
+                count:1,
+                type:0
             }
         },
-        props:['stock'],
+        //stock为显示商品详情时的库存量，用于控制能够购买的最大值
+        //num为购物车页面传过来的加入了购物车的数量
+        props:['stock','num','id'],
+        created(){
+            this.count = this.num?this.num : 1;
+        },
         methods:{
             addNum(){
                 if(this.count >= this.stock){
@@ -24,6 +30,7 @@
                     return;
                 }
                 this.count++;
+                this.type = 1;
                 this.notify();
             },
             subNum(){
@@ -36,13 +43,15 @@
                     return;
                 }
                 this.count--;
+                this.type = -1;
                 this.notify();
             },
             notify(){
                 //$emit方法
                 //第一个参数为自定义事件的名字
                 //第二个参数为事件触发时处理函数中的参数
-                this.$emit('numberChange',this.count);
+                this.$emit('numberChange',{count:this.count,id:this.id,type:this.type});
+
             }
         }
     }

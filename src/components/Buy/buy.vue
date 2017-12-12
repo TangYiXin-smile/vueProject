@@ -43,6 +43,7 @@ export default {
                     this.allLoaded = true;
                     this.$toast('没有更多了！');
                 }
+                //因为请求是异步执行的，所以需要在数据请求到之后设置
                 this.proInfo = this.proInfo.concat(res.data.message);
                 //在加载数据之后对组件进行重新定位
                 this.$refs.loadmore.onBottomLoaded();
@@ -57,6 +58,8 @@ export default {
           //上拉时加载更多数据
           this.page++;
           this.getProInfo(this.page);  
+          //数据加载完毕之后触发onBottomLoaded()事件重新定位
+          //但是获取数据的操作是异步的，所以需要在获取到数据之后重新定位
       },
       //当用户滑动组件时会有三个状态，pull：按下组件，但滑动距离没有达到默认的topDistance（70）
       //，此时松手不会触发method，列表会回到初始位置，

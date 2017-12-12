@@ -28,6 +28,7 @@
 </template>
 <script>
 	import vueObj from './config/communication';
+	import { getData } from './config/localstorageHelp';
     export default{
         data(){
             return {
@@ -46,14 +47,25 @@
 				}else{
 					this.isShow = false;
 				}
+			},
+			updateBadge(){
+				let data = getData();
+				let count = 0;
+				data.forEach(item=>{
+					count += item.count;
+				});
+				this.count = count;
 			}
 		},
 		created(){
 			this.judgeBack(this.$route.path);
-			vueObj.$on('getCount',function(count){
-				this.count = count;
+			vueObj.$on('getCount',(count)=>{
+				this.count += count;
 			});
-			
+			this.updateBadge();
+			vueObj.$on('updateBadge',()=>{
+				this.updateBadge();
+			})
 		},
 		watch:{
 			'$route':function(newValue){

@@ -10,6 +10,13 @@
                 销售价：<span class="price">￥{{detailInfo.sell_price}}</span></div>
                 <div class="buynum">
                     <span class="word">购买数量: </span>
+                    <transition 
+                    v-on:before-enter="beforeEnter"
+                    v-on:enter="enter"
+                    v-on:after-enter="afterEnter"
+                    v-on:after-leave="afterLeave">
+                        <span v-if="isShow" class="ball"></span>
+                    </transition>
                     <number :stock="detailInfo.stock_quantity"
                     @numberChange="numberChanged"></number>
                 </div>
@@ -37,13 +44,15 @@
     import vueObj from '../../config/communication';
     import number from '../Common/number.vue';
     import swipe from '../Common/swipe.vue';
+    import { setData } from '../../config/localstorageHelp';
     export default{
         props:['id'],
         data(){
             return {
                 detailInfo:{},
                 imgUrl:"/api/getthumimages/"+this.id,
-                count:1
+                count:1,
+                isShow:false
             }
         },
         methods:{
@@ -62,19 +71,41 @@
                     console.error(err);
                 });
             },
-            numberChanged(count){
-                this.count = count;
+            numberChanged(obj){
+                this.count = obj.count;
             },
             addcart(){
                 //点击加入购物车时，应该将number组件的值传给app.vue用来显示商品数量
                 //利用$emit和$on来传递this.count
-                vueObj.$emit('getCount',this.count);
+                //当动画结束时将数据传到app.vue并显示
+                this.isShow = true;
+                setData({id:this.id,count:this.count});
             },
             toComment(){
                 this.$router.push({name:'goodsComment',params:{id:this.id}});
             },
             toDesc(){
                 this.$router.push({name:'goodsDesc',params:{id:this.id}});
+            },
+            beforeEnter(el){
+                el.style.transform = 'translate(0,0)';
+            },
+            enter(el,done){
+                let elx = el.getBoundingClientRect().left;
+                let ely = el.getBoundingClientRect().top;
+                let badge = document.querySelector('.mui-badge');
+                let badgex = badge.getBoundingClientRect().left;
+                let badgey = badge.getBoundingClientRect().top;
+                let x = badgex-elx;
+                let y = badgey-ely;
+                el.style.transform = `translate(${x}px,${y}px)`;
+                done();
+            },
+            afterEnter(){
+                this.isShow = false;
+            },
+            afterLeave(){
+                vueObj.$emit('getCount',this.count);                
             }
         },
         created:function(){
@@ -122,6 +153,18 @@
     }
     .sell .buynum {
         padding:0 10px;
+        position:relative;
+    }
+    .sell .buynum .ball{
+        position: absolute;
+        top:10px;
+        left:127px;
+        width:15px;
+        height:15px;
+        background-color:red;
+        transition:all 0.5s linear;
+        border-radius:50%;
+        z-index:100;
     }
     .sell .buynum .word{
         display:inline-block;

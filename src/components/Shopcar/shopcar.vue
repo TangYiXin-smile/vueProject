@@ -13,12 +13,8 @@
                     <span class="price">￥{{item.sell_price}}</span>
                     <div class="sellNum">
                         <!-- 购买数量 -->
-                        <div class="number">
-                            <span class="add" @click="addNum(index)">+</span>
-                            <input type="number" class="inp" v-model="num[index]"/>
-                            <span class="sub" @click="subNum(index)">-</span>
-                        </div>
-                        <a href="javascript:;">删除</a>
+                        <number :num="item.num" :id="item.id" @numberChange="numberChanged"></number>
+                        <a href="javascript:;" @click="delGoods(item.id)">删除</a>
                     </div>
                 </div>
             </div>
@@ -26,50 +22,64 @@
                 <div class="word">
                     <h4>总计(不含运费)</h4>
                     <div class="info">
-                        已经选择商品<span>0</span>件，共计￥<span>{{totalPrice}}</span>元
+                        已经选择商品<span>{{ totalNum }}</span>件，共计￥<span>{{totalPrice}}</span>元
                     </div>
                 </div>
                 <div class="btn">
                     <button class="mui-btn mui-btn-danger">去结算</button>
                 </div>
             </div>
-            {{value}}{{num}}
+            {{value}}
         </div>
     </div>
 </template>
 
 <script>
+import number from '../Common/number.vue';
+import vueObj from '../../config/communication';
+import { getData, updateLocalData, delData } from '../../config/localstorageHelp';
 export default {
   data() {
     return {
         value:[],
         productList:[],
-        num:[],
-        totalPrice:0
+        totalPrice:0,
+        totalNum:0
     }
   },
   created(){
-      this.getData();
-    //   this.getTotal();
-  },
-  updated(){
-    //   this.getTotal();
-  },
-  watch:{
-      value:function(){
-          this.getTotal();
-      }
+      this.getGoodsData();
   },
   methods:{
-      getData(){
-          let url = '/api/goods/getshopcarlist/'+'88,87,89';
+      //获取购物车商品信息列表
+      getGoodsData(){
+          //从本地存储中取出加入购物车的数据
+          let data = getData();
+          //如果本地存储中没有数据则不发送请求
+          if(data.length == 0){
+              return;
+          }
+          //获取需要传递给请求地址的id
+          let ids =data.map(function(item){
+              return item.id;
+          });
+          //为了方便将购买数量挂载到每个商品对象上，先按照id对本地数据排序
+          data.sort(function(item1,item2){
+              return item1 < item2;
+          });
+          let url = '/api/goods/getshopcarlist/'+ids.join();
           this.axios.get(url)
             .then((res)=>{
                 if(res.status === 200 && res.data.status === 0){
                     this.productList = res.data.message;
+                    //为了挂载购买数量并传给number组件显示，先利用相同的规则排序
+                    this.productList.sort(function(item1,item2){
+                        return item1.id < item2.id;
+                    });
+                    //在挂载购买数量的同时将switch的默认值放进数组
                     for(let i=0;i<this.productList.length;i++){
                         this.value.push(false);
-                        this.num.push(1);
+                        this.productList[i].num = data[i].count;
                     }
                 }else{
                     console.log('获取数据失败');
@@ -79,40 +89,47 @@ export default {
                 console.error(err);
             })
       },
-      addNum(index){
-          this.num = this.num.map(function(el,i){
-              if(index === i){
-                 return el+1;
-              }else{
-                  return el;
+      numberChanged(obj){
+        //当点击number组件的加减号时更改本地存储的信息，更改badge的数量
+        updateLocalData(obj.id,obj.type);
+        vueObj.$emit('updateBadge');
+        this.computTotal();
+      },
+      computTotal(){
+          //计算总价和总件数，从本地缓存中获取总件数计算
+          let totalNum = 0;
+          let totalPrice = 0;
+          let data = getData();
+          data.sort(function(item1,item2){
+              return item1.id < item2.id;
+          });
+          this.value.forEach((item,index)=>{
+              if(item){
+                  totalNum += data[index].count;
+                  totalPrice += this.productList[index].sell_price * data[index].count;
               }
           });
+          this.totalNum = totalNum;
+          this.totalPrice = totalPrice;
       },
-      subNum(index){
-          this.num = this.num.map(function(el,i){
-              if(index === i){
-                  return el-1;
-              }else{
-                  return el;
-              }
-          })
-          if(this.num[index] < 0){
-              this.num[index] = 0;
-          }
-      },
-      getTotal(){
-        //   this.value.forEach
-        this.value.forEach((el,i)=>{
-            if(el+1 == 2){
-                this.totalPrice += this.num[i]*this.productList[i].sell_price;
-                console.log(this.totalPrice)
-            }
-        });
-        if(this.value.indexOf(true) == -1){
-            this.totalPrice = 0;
-        }
+      delGoods(id){
+          //点击删除按钮，删除本地缓存中的数据，删除productList中的数据，更新badge
+            delData(id);
+            let index = this.productList.findIndex(function(el){
+                return el.id == id;
+            });
+            this.productList.splice(index,1);
+            vueObj.$emit('updateBadge');
       }
 
+  },
+  components:{
+      number
+  },
+  watch:{
+      'value':function(){
+          this.computTotal();
+      }
   }
 };
 </script>
@@ -132,7 +149,10 @@ export default {
         float:left;
     }
     .item .left{
-        padding-top:20px;
+        padding-top:30px;
+    }
+    .item .mid {
+        padding:10px 5px 0;
     }
     .item .mid img{
         width:75px;
@@ -175,33 +195,12 @@ export default {
         font-size:14px;
     }
     .sellNum {
-        line-height:25px;
+        /* line-height:25px; */
+        padding-top:5px;
     }
-    /* 购买数量 */
-    .number{
-        display:inline;
-        overflow:hidden;
-        margin-right:5px;
-    }
-    .number *{
-        float:left;
-    }
-    .number span{
-        border:1px solid rgba(92,92,92, 0.3);
-        width:30px;
-        height: 25px;
-        text-align:center;
-        line-height:25px;
-    }
-    .number .inp {
-        padding:0;
-        margin:0;
-        height: 25px;
-        width:40px;
-        border-top:1px solid rgba(92,92,92, 0.3);
-        border-bottom:1px solid rgba(92,92,92, 0.3);
-        text-align:center;
-        font-size:14px;
+    .sellNum a{
+        display:inline-block;
+        vertical-align:top;
     }
 </style>
 
